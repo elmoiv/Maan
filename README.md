@@ -16,26 +16,26 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
 **Maan** (Arabic: معا, meaning "together") is a powerful real-time collaborative coding platform that enables teams to code together seamlessly. Built with a VS Code-inspired interface, Maan provides an intuitive environment for pair programming, code reviews, and team collaboration.
 
-### ✨ Key Features
+### Key Features
 
-- 🚀 **Real-time Collaboration** - See cursors, edits, and changes as they happen
-- 👥 **Multi-user Sessions** - Support for up to 5 developers per session
-- 🎨 **VS Code Interface** - Familiar, professional IDE experience
-- 📁 **File Management** - Full CRUD operations on files and folders
-- 💬 **Built-in Chat** - Team communication without leaving the editor
-- 🔒 **Admin Controls** - Approval system for joins and file saves
-- 🌲 **GitHub Integration** - Clone projects directly from GitHub
-- 👤 **Flexible Authentication** - Support for registered and anonymous users
-- 🎯 **Live Cursors** - See where team members are working in real-time
-- 📊 **Admin Dashboard** - Comprehensive platform management
+- **Real-time Collaboration** - See cursors, edits, and changes as they happen
+- **Multi-user Sessions** - Support for up to 5 developers per session
+- **VS Code Interface** - Familiar, professional IDE experience
+- **File Management** - Full CRUD operations on files and folders
+- **Built-in Chat** - Team communication without leaving the editor
+- **Admin Controls** - Approval system for joins and file saves
+- **GitHub Integration** - Clone projects directly from GitHub
+- **Flexible Authentication** - Support for registered and anonymous users
+- **Live Cursors** - See where team members are working in real-time
+- **Admin Dashboard** - Comprehensive platform management
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### Technology Stack
 
@@ -76,7 +76,7 @@
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -122,7 +122,7 @@
 
 ---
 
-## 📚 Usage Guide
+## Usage Guide
 
 ### For Regular Users
 
@@ -165,7 +165,7 @@
 
 ---
 
-## 🎯 Features in Detail
+## Features in Detail
 
 ### Real-time Collaboration
 - **Operational Transformation**: Ensures conflict-free collaborative editing
@@ -236,7 +236,7 @@ maan/
 
 ---
 
-## 🔐 Security Features
+## Security Features
 
 - **Password Hashing**: Werkzeug secure password hashing
 - **Path Validation**: Prevention of directory traversal attacks
@@ -246,7 +246,7 @@ maan/
 
 ---
 
-## 🐛 Known Issues & Limitations
+## Known Issues & Limitations
 
 1. **File Size**: Large files may cause performance issues
 2. **Binary Files**: Not optimized for binary file editing
@@ -256,7 +256,7 @@ maan/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -274,13 +274,13 @@ Contributions are welcome! Please follow these steps:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Monaco Editor** - Microsoft's powerful code editor
 - **Flask** - Lightweight and flexible web framework
