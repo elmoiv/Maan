@@ -1,0 +1,37 @@
+# Core Web Framework
+Flask==2.3.3
+Werkzeug==2.3.7
+
+# Real-time Communication
+Flask-SocketIO==5.3.4
+python-socketio==5.9.0
+python-engineio==4.7.1
+
+# CORS Support
+Flask-Cors==4.0.0
+
+# Database
+Flask-SQLAlchemy==3.0.5
+SQLAlchemy==2.0.20
+
+# Git Integration
+GitPython==3.1.40
+
+# WebSocket Server
+eventlet==0.33.3
+
+# Utilities
+python-dotenv==1.0.0
+secrets-token==1.0.0
+
+# Security
+itsdangerous==2.1.2
+
+# Production Server (Optional)
+gunicorn==21.2.0
+
+# Development Tools (Optional)
+black==23.9.1
+flake8==6.1.0
+pytest==7.4.2
+pytest-flask==1.2.0

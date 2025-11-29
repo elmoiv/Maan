@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Maan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            min-height: 100vh;
+            color: #cccccc;
+        }
+
+        .navbar {
+            background: #252526;
+            padding: 15px 30px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 400;
+            color: #007acc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 2px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #0e639c;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #1177bb;
+        }
+
+        .btn-danger {
+            background: #5a1d1d;
+            color: #f48771;
+            border: 1px solid #be1100;
+        }
+
+        .btn-danger:hover {
+            background: #6e2525;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: #252526;
+            padding: 25px;
+            border: 1px solid #3e3e42;
+            border-radius: 0;
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 400;
+            color: #007acc;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #969696;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .section {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 0;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 20px;
+            color: #cccccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #2d2d30;
+            padding: 12px;
+            text-align: left;
+            font-weight: 400;
+            color: #969696;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        td {
+            padding: 15px 12px;
+            border-bottom: 1px solid #3e3e42;
+            color: #cccccc;
+            font-size: 13px;
+        }
+
+        tr:hover {
+            background: #2a2d2e;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: 400;
+        }
+
+        .badge-success {
+            background: #1e5e3e;
+            color: #5ec876;
+        }
+
+        .badge-danger {
+            background: #5a1d1d;
+            color: #f48771;
+        }
+
+        .badge-warning {
+            background: #635d14;
+            color: #f0c674;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 2px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 400;
+            margin: 0 3px;
+            transition: all 0.2s;
+        }
+
+        .action-btn.danger {
+            background: #5a1d1d;
+            color: #f48771;
+            border: 1px solid #be1100;
+        }
+
+        .action-btn.danger:hover {
+            background: #6e2525;
+        }
+
+        .action-btn.success {
+            background: #1e5e3e;
+            color: #5ec876;
+        }
+
+        .action-btn.success:hover {
+            background: #267347;
+        }
+
+        code {
+            background: #3c3c3c;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            color: #9cdcfe;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 0;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4e4e4e;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">
+            <i class="fas fa-crown"></i>
+            Admin Dashboard
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <button class="btn btn-primary" onclick="window.location.href='/dashboard'">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="total-users">0</div>
+                <div style="color: #858585; font-size: 12px; margin-top: 5px;">
+                    <i class="fas fa-users"></i> Registered accounts
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Projects</div>
+                <div class="stat-value" id="total-projects">0</div>
+                <div style="color: #858585; font-size: 12px; margin-top: 5px;">
+                    <i class="fas fa-folder"></i> Created workspaces
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Active Sessions</div>
+                <div class="stat-value" id="active-sessions">0</div>
+                <div style="color: #858585; font-size: 12px; margin-top: 5px;">
+                    <i class="fas fa-circle" style="color: #5ec876;"></i> Currently running
+                </div>
+            </div>
+        </div>
+
+        <!-- All Users -->
+        <div class="section">
+            <div class="section-header">
+                <span><i class="fas fa-users"></i> All Users</span>
+            </div>
+            <table id="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Admin</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- All Projects -->
+        <div class="section">
+            <div class="section-header">
+                <span><i class="fas fa-folder-open"></i> All Projects</span>
+            </div>
+            <table id="projects-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Session ID</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                const res = await fetch('/api/admin/dashboard');
+                const data = await res.json();
+
+                // Update stats
+                document.getElementById('total-users').textContent = data.stats.total_users;
+                document.getElementById('total-projects').textContent = data.stats.total_projects;
+                document.getElementById('active-sessions').textContent = data.stats.active_sessions;
+
+                // Render users table
+                const usersTable = document.getElementById('users-table').querySelector('tbody');
+                usersTable.innerHTML = data.users.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.username}</td>
+                        <td>${user.email}</td>
+                        <td>
+                            ${user.is_admin ? 
+                                '<span class="badge badge-success">Admin</span>' : 
+                                `<button class="action-btn success" onclick="makeAdmin(${user.id})">Make Admin</button>`
+                            }
+                        </td>
+                        <td>
+                            <button class="action-btn danger" onclick="deleteUser(${user.id}, '${user.username}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Render projects table
+                const projectsTable = document.getElementById('projects-table').querySelector('tbody');
+                projectsTable.innerHTML = data.projects.map(project => `
+                    <tr>
+                        <td>${project.id}</td>
+                        <td>${project.name}</td>
+                        <td><code>${project.session_id.substring(0, 12)}...</code></td>
+                        <td><span class="badge badge-success">Active</span></td>
+                        <td>
+                            <button class="action-btn" onclick="window.location.href='/session/${project.session_id}'" style="background: #0e639c; color: white;">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error('Failed to load dashboard:', err);
+            }
+        }
+
+        async function makeAdmin(userId) {
+            if (!confirm('Make this user an admin?')) return;
+
+            try {
+                const res = await fetch(`/api/admin/make-admin/${userId}`, {
+                    method: 'POST'
+                });
+
+                if (res.ok) {
+                    alert('User is now an admin');
+                    loadDashboard();
+                } else {
+                    alert('Failed to make user admin');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        async function deleteUser(userId, username) {
+            if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
+
+            try {
+                const res = await fetch(`/api/admin/delete-user/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    alert('User deleted successfully');
+                    loadDashboard();
+                } else {
+                    alert('Failed to delete user');
+                }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
+        }
+
+        window.onload = loadDashboard;
+    </script>
+</body>
+</html>

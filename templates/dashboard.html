@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Maan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            min-height: 100vh;
+            color: #cccccc;
+        }
+
+        .navbar {
+            background: #252526;
+            padding: 15px 30px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 400;
+            color: #007acc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Consolas', 'Courier New', monospace;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-name {
+            font-weight: 400;
+            color: #cccccc;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 2px;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: #0e639c;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #1177bb;
+        }
+
+        .btn-secondary {
+            background: #3e3e42;
+            color: #cccccc;
+        }
+
+        .btn-secondary:hover {
+            background: #4e4e4e;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #cccccc;
+            margin-bottom: 10px;
+            font-weight: 400;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #969696;
+            font-size: 14px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 0;
+            padding: 25px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .project-card:hover {
+            background: #2d2d30;
+            border-color: #007acc;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .project-name {
+            font-size: 18px;
+            font-weight: 400;
+            color: #cccccc;
+            margin-bottom: 5px;
+        }
+
+        .project-date {
+            font-size: 11px;
+            color: #858585;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .project-info {
+            margin: 15px 0;
+            padding: 15px;
+            background: #1e1e1e;
+            border-radius: 0;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            font-size: 13px;
+            color: #969696;
+        }
+
+        .session-url {
+            background: #3c3c3c;
+            padding: 8px 12px;
+            border-radius: 2px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 12px;
+            margin: 10px 0;
+            color: #9cdcfe;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #454545;
+        }
+
+        .session-url:hover {
+            border-color: #007acc;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 0;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            color: #cccccc;
+            font-weight: 400;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 400;
+            color: #cccccc;
+            font-size: 13px;
+        }
+
+        input[type="text"], input[type="url"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #3e3e42;
+            background: #3c3c3c;
+            border-radius: 2px;
+            font-size: 13px;
+            color: #cccccc;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #007acc;
+            background: #1e1e1e;
+        }
+
+        input::placeholder {
+            color: #6a6a6a;
+        }
+
+        small {
+            color: #858585;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #858585;
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 0;
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+            color: #969696;
+        }
+
+        .empty-state h3 {
+            color: #cccccc;
+            font-weight: 400;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: #858585;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: 400;
+        }
+
+        .badge-success {
+            background: #1e5e3e;
+            color: #5ec876;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #424242;
+            border-radius: 0;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4e4e4e;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="logo">
+            <i class="fas fa-code-branch"></i>
+            Maan - معا
+        </div>
+        <div class="user-menu">
+            <span class="user-name" id="username">User</span>
+            <button class="btn btn-secondary" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>My Projects</h1>
+            <p class="subtitle">Create and manage your collaborative coding sessions</p>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="showCreateModal()">
+                <i class="fas fa-plus"></i> New Project
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='/admin/dashboard'" id="admin-btn" style="display:none;">
+                <i class="fas fa-crown"></i> Admin Dashboard
+            </button>
+        </div>
+
+        <div class="projects-grid" id="projects-grid">
+            <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <h3>No projects yet</h3>
+                <p>Create your first project to start collaborating</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div class="modal" id="create-modal">
+        <div class="modal-content">
+            <h2>Create New Project</h2>
+            <form onsubmit="createProject(event)">
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" id="project-name" required placeholder="My Awesome Project">
+                </div>
+                <div class="form-group">
+                    <label>GitHub URL (Optional)</label>
+                    <input type="url" id="github-url" placeholder="https://github.com/username/repo">
+                    <small>Leave empty to start with a blank project</small>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">
+                        <i class="fas fa-check"></i> Create
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()" style="flex: 1;">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        function init() {
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                window.location.href = '/';
+                return;
+            }
+            
+            currentUser = JSON.parse(userStr);
+            document.getElementById('username').textContent = currentUser.username;
+            
+            if (currentUser.is_admin) {
+                document.getElementById('admin-btn').style.display = 'inline-flex';
+            }
+            
+            loadProjects();
+        }
+
+        async function loadProjects() {
+            try {
+                const res = await fetch('/api/projects/my');
+                const projects = await res.json();
+                
+                const grid = document.getElementById('projects-grid');
+                
+                if (projects.length === 0) {
+                    grid.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <h3>No projects yet</h3>
+                            <p>Create your first project to start collaborating</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                grid.innerHTML = projects.map(p => `
+                    <div class="project-card" onclick="openSession('${p.session_id}')">
+                        <div class="project-header">
+                            <div>
+                                <div class="project-name">${p.name}</div>
+                                <div class="project-date">Created ${new Date(p.created_at).toLocaleDateString()}</div>
+                            </div>
+                            <span class="badge badge-success">Active</span>
+                        </div>
+                        
+                        <div class="project-info">
+                            <div class="info-item">
+                                <i class="fas fa-link"></i>
+                                <span>Session ID: ${p.session_id.substring(0, 8)}...</span>
+                            </div>
+                            ${p.github_url ? `
+                                <div class="info-item">
+                                    <i class="fab fa-github"></i>
+                                    <span>${p.github_url.split('/').pop()}</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="session-url" onclick="copyUrl(event, '${p.session_id}')">
+                            <span>${window.location.origin}/session/${p.session_id}</span>
+                            <i class="fas fa-copy"></i>
+                        </div>
+                        
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+                            <i class="fas fa-play"></i> Open Session
+                        </button>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+            }
+        }
+
+        function showCreateModal() {
+            document.getElementById('create-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('create-modal').style.display = 'none';
+        }
+
+        async function createProject(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('project-name').value;
+            const githubUrl = document.getElementById('github-url').value;
+            
+            try {
+                const res = await fetch('/api/projects/create', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name, github_url: githubUrl})
+                });
+                
+                const data = await res.json();
+                
+                if (res.ok) {
+                    closeModal();
+                    loadProjects();
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                alert('Failed to create project');
+            }
+        }
+
+        function openSession(sessionId) {
+            const userStr = localStorage.getItem('user');
+            console.log('Opening session, user data:', userStr);
+            
+            window.location.href = `/session/${sessionId}`;
+        }
+
+        function copyUrl(e, sessionId) {
+            e.stopPropagation();
+            const url = `${window.location.origin}/session/${sessionId}`;
+            navigator.clipboard.writeText(url);
+            
+            const btn = e.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<span>Copied!</span><i class="fas fa-check"></i>';
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        }
+
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = '/';
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
