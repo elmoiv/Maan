@@ -191,7 +191,7 @@
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -217,7 +217,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://user:pass@localhost/maan'
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 maan/
@@ -290,6 +290,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-## 🌟 Star History
+## Star History
 
 If you find this project useful, please consider giving it a star ⭐
+
