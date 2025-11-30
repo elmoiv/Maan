@@ -10,6 +10,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room, rooms
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 import git
+from datetime import datetime, timedelta
 import traceback
 
 app = Flask(__name__)
@@ -55,8 +56,29 @@ class SessionUser(db.Model):
     is_anonymous = db.Column(db.Boolean, default=True)
     joined_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class PendingApproval(db.Model):
+    id = db.Column(db.String(50), primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    approval_type = db.Column(db.String(20), nullable=False)  # 'join' or 'save'
+    username = db.Column(db.String(80))
+    is_anonymous = db.Column(db.Boolean, default=True)
+    user_session_id = db.Column(db.String(100))
+    sid = db.Column(db.String(100))
+    # For save approvals
+    file_path = db.Column(db.String(300))
+    file_content = db.Column(db.Text)
+    user_data = db.Column(db.Text)  # JSON string
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 with app.app_context():
     db.create_all()
+
+    old_approvals = PendingApproval.query.filter(
+        PendingApproval.created_at < datetime.utcnow() - timedelta(days=1)
+    ).all()
+    for approval in old_approvals:
+        db.session.delete(approval)
+    db.session.commit()
 
 # ==================== Active Sessions Storage ====================
 active_sessions = {}  # {session_id: {users: [], pending_approvals: []}}
@@ -269,11 +291,26 @@ def save_file(session_id):
         }, room=session_id)
         return jsonify({'status': 'success'})
     else:
-        # Request approval (same as before)
+        # Request approval (for non-admin)
         if session_id not in active_sessions:
             active_sessions[session_id] = {'users': [], 'pending_approvals': []}
         
         approval_id = secrets.token_hex(8)
+        
+        # Store in database
+        project = Project.query.filter_by(session_id=session_id).first()
+        db_approval = PendingApproval(
+            id=approval_id,
+            project_id=project.id,
+            approval_type='save',
+            file_path=path,
+            file_content=content,
+            user_data=json.dumps(user_info)
+        )
+        db.session.add(db_approval)
+        db.session.commit()
+        
+        # Store in memory
         active_sessions[session_id]['pending_approvals'].append({
             'id': approval_id,
             'type': 'save',
@@ -373,6 +410,36 @@ def rename_file(session_id):
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/delete-project/<session_id>', methods=['DELETE'])
+def delete_project(session_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    project = Project.query.filter_by(session_id=session_id).first()
+    if not project or session['user_id'] != project.admin_id:
+        return jsonify({'error': 'Not authorized'}), 403
+    
+    # Kick all users and close session
+    socketio.emit('session_deleted', {'message': 'This session has been deleted by the admin'}, room=session_id)
+    
+    # Mark as inactive
+    project.active = False
+    db.session.delete(project)
+    db.session.commit()
+    
+    # Delete workspace folder
+    try:
+        if project.workspace_path and os.path.exists(project.workspace_path):
+            shutil.rmtree(project.workspace_path)
+    except Exception as e:
+        print(f"Failed to delete workspace: {e}")
+    
+    # Remove from active sessions
+    if session_id in active_sessions:
+        del active_sessions[session_id]
+    
+    return jsonify({'status': 'success'})
 
 # ==================== Admin Routes ====================
 
@@ -511,6 +578,26 @@ def list_files_with_path(session_id):
     return jsonify({'name': os.path.basename(target_path), 'children': tree})
 
 # ==================== WebSocket Events ====================
+
+def send_pending_approvals_to_admin(session_id, project_id):
+    """Send all pending approvals to admin when they connect"""
+    pending_approvals = PendingApproval.query.filter_by(project_id=project_id).all()
+    
+    for approval in pending_approvals:
+        if approval.approval_type == 'join':
+            socketio.emit('join_approval_request', {
+                'id': approval.id,
+                'username': approval.username
+            }, room=f"{session_id}_admin")
+        elif approval.approval_type == 'save':
+            user_data = json.loads(approval.user_data) if approval.user_data else {}
+            socketio.emit('approval_request', {
+                'id': approval.id,
+                'type': 'save',
+                'path': approval.file_path,
+                'user': user_data
+            }, room=f"{session_id}_admin")
+
 @socketio.on('join_session')
 def handle_join_session(data):
     session_id = data['session_id']
@@ -526,30 +613,40 @@ def handle_join_session(data):
     if session_id not in active_sessions:
         active_sessions[session_id] = {'users': [], 'pending_approvals': []}
     
-    # Check if user already exists (reconnection)
+    # Check if user is admin FIRST before any other checks
+    is_user_admin = 'user_id' in session and session['user_id'] == project.admin_id
+    
+    # Check if user has pending approval in database
+    pending_approval_db = PendingApproval.query.filter_by(
+        project_id=project.id,
+        user_session_id=user_session_id,
+        approval_type='join'
+    ).first()
+    
+    if pending_approval_db and not is_user_admin:
+        # User reloaded while pending approval - update their sid and keep them waiting
+        pending_approval_db.sid = request.sid
+        db.session.commit()
+        
+        # Also update in memory if exists
+        for approval in active_sessions[session_id]['pending_approvals']:
+            if approval.get('sessionId') == user_session_id and approval.get('type') == 'join':
+                approval['sid'] = request.sid
+                break
+        
+        # Keep them waiting - DO NOT let them join
+        emit('waiting_approval', {'message': 'Waiting for admin approval...'})
+        return
+    
+    # Check if user already exists in active users (reconnection of approved user)
     existing_user = None
     for user in active_sessions[session_id]['users']:
         if user.get('sessionId') == user_session_id:
             existing_user = user
             break
     
-    # Check if user has pending approval (reload during pending state)
-    pending_approval = None
-    for approval in active_sessions[session_id]['pending_approvals']:
-        if approval.get('sessionId') == user_session_id and approval.get('type') == 'join':
-            pending_approval = approval
-            break
-    
-    # Check if user is admin
-    is_user_admin = 'user_id' in session and session['user_id'] == project.admin_id
-    
-    if pending_approval:
-        # User reloaded while pending approval - update their sid and tell them to wait again
-        pending_approval['sid'] = request.sid
-        emit('waiting_approval', {'message': 'Waiting for admin approval...'})
-        
-    elif existing_user:
-        # Reconnection - update socket ID
+    if existing_user:
+        # Reconnection of already approved user - update socket ID
         existing_user['sid'] = request.sid
         user_data = existing_user
         join_room(session_id)
@@ -590,23 +687,41 @@ def handle_join_session(data):
             'users': active_sessions[session_id]['users']
         }, room=session_id)
         
+        # Send all pending approvals to admin
+        send_pending_approvals_to_admin(session_id, project.id)
+        
     else:
         # Non-admin requires approval
         if len(active_sessions[session_id]['users']) >= project.max_users:
             emit('error', {'message': 'Session is full'})
             return
         
-        # Check if this user already has a pending approval (shouldn't happen but just in case)
+        # Check if this user already has a pending approval in memory
         existing_pending = next((a for a in active_sessions[session_id]['pending_approvals'] 
                                 if a.get('sessionId') == user_session_id and a.get('type') == 'join'), None)
         
         if existing_pending:
-            # Update the sid
+            # Update the sid and keep them waiting
             existing_pending['sid'] = request.sid
             emit('waiting_approval', {'message': 'Waiting for admin approval...'})
         else:
             # Create new approval request
             approval_id = secrets.token_hex(8)
+            
+            # Store in database
+            db_approval = PendingApproval(
+                id=approval_id,
+                project_id=project.id,
+                approval_type='join',
+                username=username,
+                is_anonymous=is_anonymous,
+                user_session_id=user_session_id,
+                sid=request.sid
+            )
+            db.session.add(db_approval)
+            db.session.commit()
+            
+            # Store in memory
             active_sessions[session_id]['pending_approvals'].append({
                 'id': approval_id,
                 'type': 'join',
@@ -625,7 +740,6 @@ def handle_join_session(data):
             # Tell user to wait
             emit('waiting_approval', {'message': 'Waiting for admin approval...'})
 
-
 @socketio.on('join_approval_response')
 def handle_join_approval_response(data):
     session_id = data['session_id']
@@ -635,10 +749,25 @@ def handle_join_approval_response(data):
     if session_id not in active_sessions:
         return
     
+    # Get from database
+    db_approval = PendingApproval.query.filter_by(id=approval_id).first()
+    if not db_approval:
+        return
+    
+    # Get from memory
     approval = next((a for a in active_sessions[session_id]['pending_approvals'] 
                      if a['id'] == approval_id and a['type'] == 'join'), None)
+    
     if not approval:
-        return
+        # Reconstruct from database
+        approval = {
+            'id': db_approval.id,
+            'type': 'join',
+            'username': db_approval.username,
+            'is_anonymous': db_approval.is_anonymous,
+            'sessionId': db_approval.user_session_id,
+            'sid': db_approval.sid
+        }
     
     if approved:
         project = Project.query.filter_by(session_id=session_id).first()
@@ -646,6 +775,9 @@ def handle_join_approval_response(data):
         # Check max users again
         if len(active_sessions[session_id]['users']) >= project.max_users:
             emit('error', {'message': 'Session is full'}, room=approval['sid'])
+            # Clean up
+            db.session.delete(db_approval)
+            db.session.commit()
             active_sessions[session_id]['pending_approvals'] = [
                 a for a in active_sessions[session_id]['pending_approvals'] 
                 if a['id'] != approval_id
@@ -665,16 +797,16 @@ def handle_join_approval_response(data):
         }
         active_sessions[session_id]['users'].append(user_data)
         
-        # CRITICAL: Make the user actually join the Socket.IO room
+        # Make the user actually join the Socket.IO room
         socketio.server.enter_room(approval['sid'], session_id)
         
-        # Tell user they're approved with their user data
+        # Tell user they're approved
         emit('join_approved', {'user': user_data}, room=approval['sid'])
         
-        # Send them the current session state with all users
+        # Send session state
         emit('session_state', {'users': active_sessions[session_id]['users']}, room=approval['sid'])
         
-        # Notify all users (including the newly joined user)
+        # Notify all users
         emit('user_joined', {
             'username': approval['username'],
             'color': user_data['color'],
@@ -685,7 +817,11 @@ def handle_join_approval_response(data):
         emit('join_rejected', {'message': 'Your request to join was denied'}, 
              room=approval['sid'])
     
-    # Remove from pending
+    # Remove from database
+    db.session.delete(db_approval)
+    db.session.commit()
+    
+    # Remove from memory
     active_sessions[session_id]['pending_approvals'] = [
         a for a in active_sessions[session_id]['pending_approvals'] 
         if a['id'] != approval_id
@@ -770,14 +906,31 @@ def handle_approval_response(data):
     if session_id not in active_sessions:
         return
     
-    approval = next((a for a in active_sessions[session_id]['pending_approvals'] if a['id'] == approval_id), None)
-    if not approval:
+    # Get from database
+    db_approval = PendingApproval.query.filter_by(id=approval_id).first()
+    if not db_approval:
         return
+    
+    # Get from memory
+    approval = next((a for a in active_sessions[session_id]['pending_approvals'] if a['id'] == approval_id), None)
+    
+    if not approval:
+        # Reconstruct from database
+        approval = {
+            'id': db_approval.id,
+            'type': 'save',
+            'path': db_approval.file_path,
+            'content': db_approval.file_content,
+            'user': json.loads(db_approval.user_data) if db_approval.user_data else {}
+        }
     
     if approved and approval['type'] == 'save':
         project = Project.query.filter_by(session_id=session_id).first()
         if not is_safe_path(project.workspace_path, approval['path']):
             emit('error', {'message': 'Invalid path'})
+            # Clean up
+            db.session.delete(db_approval)
+            db.session.commit()
             return
             
         full_path = os.path.join(project.workspace_path, approval['path'])
@@ -785,7 +938,7 @@ def handle_approval_response(data):
             with open(full_path, 'w', encoding='utf-8') as f:
                 f.write(approval['content'])
             
-            # Emit to ALL users with content so they can sync
+            # Emit to ALL users with content
             emit('file_saved', {
                 'path': approval['path'], 
                 'user': approval['user'],
@@ -795,6 +948,11 @@ def handle_approval_response(data):
         except Exception as e:
             emit('error', {'message': f'Failed to save: {str(e)}'})
     
+    # Remove from database
+    db.session.delete(db_approval)
+    db.session.commit()
+    
+    # Remove from memory
     active_sessions[session_id]['pending_approvals'] = [
         a for a in active_sessions[session_id]['pending_approvals'] if a['id'] != approval_id
     ]
@@ -818,11 +976,17 @@ def handle_disconnect():
             }, room=session_id, include_self=False)
             break
         
-        # Also remove from pending approvals
+        # Remove from pending approvals (memory)
         session_data['pending_approvals'] = [
             a for a in session_data['pending_approvals'] 
             if a.get('sid') != request.sid
         ]
+    
+    # Remove from pending approvals (database)
+    db_approvals = PendingApproval.query.filter_by(sid=request.sid).all()
+    for approval in db_approvals:
+        db.session.delete(approval)
+    db.session.commit()
 
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', log_output=True, port=5000)
+    socketio.run(app, host='0.0.0.0', log_output=True, port=5555)
